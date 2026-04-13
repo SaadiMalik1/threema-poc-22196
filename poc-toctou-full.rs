@@ -270,7 +270,7 @@ fn main() -> io::Result<()> {
         println!("");
     }
 
-    let mut test = ToctouTest::new(config)?;
+    let mut test = ToctouTest::new(config.clone())?;
     test.setup()?;
 
     // Run multiple test iterations

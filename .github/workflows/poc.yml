@@ -1,0 +1,49 @@
+name: Threema TOCTOU POC
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+  workflow_dispatch:
+
+jobs:
+  run-bash-poc:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Dummy Threema App
+        run: |
+          sudo mkdir -p /Applications/Threema.app
+          sudo chown -R $USER /Applications/Threema.app
+
+      - name: Make script executable
+        run: chmod +x poc-race-simple.sh
+
+      - name: Run Bash POC
+        run: ./poc-race-simple.sh
+
+  run-rust-poc:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Dummy Threema App
+        run: |
+          sudo mkdir -p /Applications/Threema.app
+          sudo chown -R $USER /Applications/Threema.app
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      
+      - name: Compile Rust POC
+        run: rustc --edition 2021 poc-toctou-full.rs -o poc-toctou-full
+        
+      - name: Run Rust POC (Normal)
+        run: ./poc-toctou-full
+        
+      - name: Run Rust POC (Aggressive)
+        run: ./poc-toctou-full --aggressive

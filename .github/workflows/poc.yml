@@ -13,10 +13,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Setup Dummy Threema App
-        run: |
-          sudo mkdir -p /Applications/Threema.app
-          sudo chown -R $USER /Applications/Threema.app
+      - name: Install Official Threema Desktop
+        run: brew install --cask threema
 
       - name: Make script executable
         run: chmod +x poc-race-simple.sh
@@ -29,10 +27,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Setup Dummy Threema App
-        run: |
-          sudo mkdir -p /Applications/Threema.app
-          sudo chown -R $USER /Applications/Threema.app
+      - name: Install Official Threema Desktop
+        run: brew install --cask threema
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable

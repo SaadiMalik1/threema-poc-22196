@@ -195,6 +195,7 @@ impl ToctouTest {
             let checks = Arc::clone(&total_checks);
 
             // ── Attacker threads: continuously swap the symlink ──
+            static THREAD_COUNTER: AtomicUsize = AtomicUsize::new(0);
             let mut swap_handles = Vec::new();
             for _ in 0..self.config.swap_threads {
                 let symlink = self.source_symlink.clone();
@@ -202,17 +203,15 @@ impl ToctouTest {
                 let malicious = self.malicious_target.clone();
                 let stop = Arc::clone(&stop_flag);
                 let test_dir = self.test_dir.clone();
+                let tid = THREAD_COUNTER.fetch_add(1, Ordering::SeqCst);
 
                 swap_handles.push(thread::spawn(move || {
                     let mut local_swaps: u64 = 0;
+                    let tmp_link = test_dir.join(format!(".swap_tmp_{}", tid));
                     while !stop.load(Ordering::Relaxed) {
                         // Atomic symlink swap using rename(2):
                         // 1. Create new symlink at temp path
                         // 2. rename() atomically replaces the target
-                        let tmp_link = test_dir.join(format!(
-                            ".swap_tmp_{}",
-                            thread::current().id().as_u64().get()
-                        ));
 
                         // Swap to malicious
                         let _ = fs::remove_file(&tmp_link);

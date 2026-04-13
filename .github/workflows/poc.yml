@@ -1,4 +1,4 @@
-name: Threema TOCTOU POC
+name: Threema LPE Vulnerability Verification
 
 on:
   push:
@@ -8,38 +8,52 @@ on:
   workflow_dispatch:
 
 jobs:
-  run-bash-poc:
+  verify-vulnerability:
+    name: Verify LPE Against Official Threema (macOS ARM64)
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install Official Threema Desktop
-        run: brew install --cask threema
+        run: |
+          echo "=== Installing official Threema Desktop via Homebrew ==="
+          brew install --cask threema
+          echo ""
+          echo "=== Installed Threema.app ==="
+          ls -la /Applications/Threema.app/
+          echo ""
+          echo "=== Threema version ==="
+          defaults read /Applications/Threema.app/Contents/Info CFBundleShortVersionString
+          echo ""
+          echo "=== Code signature ==="
+          codesign -dv /Applications/Threema.app 2>&1 || true
 
-      - name: Make script executable
-        run: chmod +x poc-race-simple.sh
-
-      - name: Run Bash POC
-        run: ./poc-race-simple.sh
-
-  run-rust-poc:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Install Official Threema Desktop
-        run: brew install --cask threema
+      - name: Run Vulnerability Verification Suite
+        run: |
+          chmod +x poc-verify-vuln.sh
+          ./poc-verify-vuln.sh
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
-      
-      - name: Compile Rust POC
+
+      - name: Compile Rust TOCTOU POC
         run: rustc --edition 2021 poc-toctou-full.rs -o poc-toctou-full
-        
-      - name: Run Rust POC (Normal)
-        run: ./poc-toctou-full
-        
-      - name: Run Rust POC (Aggressive)
+
+      - name: Run Rust TOCTOU (Aggressive — Real App)
         run: ./poc-toctou-full --aggressive
+
+      - name: Archive Test Results
+        if: always()
+        run: |
+          echo "=== Final Environment State ==="
+          echo "macOS: $(sw_vers -productVersion)"
+          echo "Arch: $(uname -m)"
+          echo "Threema: $(defaults read /Applications/Threema.app/Contents/Info CFBundleShortVersionString 2>/dev/null || echo 'N/A')"
+          echo ""
+          echo "=== Helper binary in app bundle ==="
+          find /Applications/Threema.app -name "*helper*" -type f 2>/dev/null || echo "No helper found"
+          echo ""
+          echo "=== Temp files ==="
+          ls -la /tmp/threema-* 2>/dev/null || echo "No temp files"

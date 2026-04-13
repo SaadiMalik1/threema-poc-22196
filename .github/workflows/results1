@@ -1,0 +1,1353 @@
+name: Threema TOCTOU POCon: push: branches: [ "master", "main" ] pull_request: branches: [ "master", "main" ] workflow_dispatch:jobs: run-bash-poc: runs-on: macos-latest steps: - uses: actions/checkout@v4 - name: Setup Dummy Threema App run: | sudo mkdir -p /Applications/Threema.app sudo chown -R $USER /Applications/Threema.app - name: Make script executable run: chmod +x poc-race-simple.sh - name: Run Bash POC run: ./poc-race-simple.sh run-rust-poc: runs-on: macos-latest steps: - uses: actions/checkout@v4 - name: Setup Dummy Threema App run: | sudo mkdir -p /Applications/Threema.app sudo chown -R $USER /Applications/Threema.app - name: Setup Rust uses: dtolnay/rust-toolchain@stable with: toolchain: stable - name: Compile Rust POC run: rustc --edition 2021 poc-toctou-full.rs -o poc-toctou-full - name: Run Rust POC (Normal) run: ./poc-toctou-full - name: Run Rust POC (Aggressive) run: ./poc-toctou-full --aggressive
+
+This is a GitHub Actions workflow designed to automate the execution of Proof of Concept (POC) scripts for a TOCTOU (Time-Of-Check to Time-Of-Use) race condition vulnerability, specifically targeting a simulated macOS environment for the Threema application.
+
+Here is a breakdown of what this pipeline is doing:
+
+Workflow Triggers
+The workflow runs automatically when code is pushed to or a pull request is opened against the master or main branches. It also includes workflow_dispatch, which allows you to trigger the run manually from the GitHub Actions UI.
+
+Job 1: run-bash-poc
+Environment: Runs on the latest macOS runner (macos-latest).
+
+Target Setup: It uses sudo to create a fake directory at /Applications/Threema.app and changes the ownership to the current runner user. This likely satisfies hardcoded file paths that the POC script expects to interact with.
+
+Execution: It grants execution permissions to poc-race-simple.sh and runs it. This implies a shell-script-based attempt to trigger the race condition.
+
+Job 2: run-rust-poc
+Environment: Also runs on macos-latest.
+
+Target Setup: Recreates the same dummy /Applications/Threema.app directory.
+
+Compilation: Uses the dtolnay/rust-toolchain action to install stable Rust, then manually compiles the poc-toctou-full.rs file into an executable binary using the 2021 edition of Rust.
+
+Execution: Runs the compiled Rust binary twice:
+
+Once in its normal mode.
+
+Once with an --aggressive flag, which likely spawns more threads or attempts the race condition in a tighter loop to increase the chances of winning the race.
+
+Are you looking to debug a specific failure in one of these CI jobs, or would you like to discuss how to mitigate the underlying TOCTOU mechanics?
+
+does it use official threema app?
+
+No, it does not use the official Threema application.
+
+Instead, it uses a fake or "dummy" setup. If you look closely at the Setup Dummy Threema App step in both the Bash and Rust jobs, it runs these exact commands:
+
+Bash
+sudo mkdir -p /Applications/Threema.app
+sudo chown -R $USER /Applications/Threema.app
+This simply creates an empty directory with the name /Applications/Threema.app and assigns ownership to the current user.
+
+Why do it this way?
+When testing a Time-Of-Check to Time-Of-Use (TOCTOU) vulnerability in an automated environment (like GitHub Actions), you rarely need the actual, fully-functioning application.
+
+TOCTOU flaws are typically file system race conditions—meaning the vulnerability lies in how a script or system checks a file path and then subsequently interacts with it. By creating this fake directory, the environment provides the exact hardcoded file path the Proof of Concept script expects to target, allowing the race condition to be tested without the heavy overhead of installing a real macOS graphical application.
+
+2026-04-13T05:04:43.6468720Z Current runner version: '2.333.1'
+
+2026-04-13T05:04:43.6485010Z ##[group]Runner Image Provisioner
+
+2026-04-13T05:04:43.6485490Z Hosted Compute Agent
+
+2026-04-13T05:04:43.6485830Z Version: 20260213.493
+
+2026-04-13T05:04:43.6486190Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
+
+2026-04-13T05:04:43.6486650Z Build Date: 2026-02-13T00:28:41Z
+
+2026-04-13T05:04:43.6487050Z Worker ID: {818a3a8a-f8ef-4223-8212-288b024344ff}
+
+2026-04-13T05:04:43.6487720Z Azure Region: westus
+
+2026-04-13T05:04:43.6488080Z ##[endgroup]
+
+2026-04-13T05:04:43.6489430Z ##[group]Operating System
+
+2026-04-13T05:04:43.6489790Z macOS
+
+2026-04-13T05:04:43.6490060Z 15.7.4
+
+2026-04-13T05:04:43.6490340Z 24G517
+
+2026-04-13T05:04:43.6490640Z ##[endgroup]
+
+2026-04-13T05:04:43.6490950Z ##[group]Runner Image
+
+2026-04-13T05:04:43.6491280Z Image: macos-15-arm64
+
+2026-04-13T05:04:43.6491590Z Version: 20260406.0256.1
+
+2026-04-13T05:04:43.6492410Z Included Software: https://github.com/actions/runner-images/blob/macos-15-arm64/20260406.0256/images/macos/macos-15-arm64-Readme.md
+
+2026-04-13T05:04:43.6493370Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-15-arm64%2F20260406.0256
+
+2026-04-13T05:04:43.6493960Z ##[endgroup]
+
+2026-04-13T05:04:43.6494650Z ##[group]GITHUB_TOKEN Permissions
+
+2026-04-13T05:04:43.6495940Z Contents: read
+
+2026-04-13T05:04:43.6496250Z Metadata: read
+
+2026-04-13T05:04:43.6496540Z Packages: read
+
+2026-04-13T05:04:43.6496840Z ##[endgroup]
+
+2026-04-13T05:04:43.6498260Z Secret source: Actions
+
+2026-04-13T05:04:43.6498660Z Prepare workflow directory
+
+2026-04-13T05:04:43.6848750Z Prepare all required actions
+
+2026-04-13T05:04:43.6904310Z Getting action download info
+
+2026-04-13T05:04:43.9432890Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+
+2026-04-13T05:04:44.2370850Z Download action repository 'dtolnay/rust-toolchain@stable' (SHA:29eef336d9b2848a0b548edc03f92a220660cdb8)
+
+2026-04-13T05:04:45.3653730Z Complete job name: run-rust-poc
+
+2026-04-13T05:04:45.4243730Z ##[group]Run actions/checkout@v4
+
+2026-04-13T05:04:45.4244710Z with:
+
+2026-04-13T05:04:45.4245280Z repository: SaadiMalik1/threema-poc-22196
+
+2026-04-13T05:04:45.4246240Z token: ***
+
+2026-04-13T05:04:45.4246720Z ssh-strict: true
+
+2026-04-13T05:04:45.4247220Z ssh-user: git
+
+2026-04-13T05:04:45.4247730Z persist-credentials: true
+
+2026-04-13T05:04:45.4248310Z clean: true
+
+2026-04-13T05:04:45.4248830Z sparse-checkout-cone-mode: true
+
+2026-04-13T05:04:45.4249450Z fetch-depth: 1
+
+2026-04-13T05:04:45.4249950Z fetch-tags: false
+
+2026-04-13T05:04:45.4250460Z show-progress: true
+
+2026-04-13T05:04:45.4250980Z lfs: false
+
+2026-04-13T05:04:45.4251470Z submodules: false
+
+2026-04-13T05:04:45.4252010Z set-safe-directory: true
+
+2026-04-13T05:04:45.4252800Z ##[endgroup]
+
+2026-04-13T05:04:45.8580970Z Syncing repository: SaadiMalik1/threema-poc-22196
+
+2026-04-13T05:04:45.8583840Z ##[group]Getting Git version info
+
+2026-04-13T05:04:45.8585180Z Working directory is '/Users/runner/work/threema-poc-22196/threema-poc-22196'
+
+2026-04-13T05:04:45.8587650Z [command]/opt/homebrew/bin/git version
+
+2026-04-13T05:04:45.9648250Z git version 2.53.0
+
+2026-04-13T05:04:45.9671990Z ##[endgroup]
+
+2026-04-13T05:04:45.9684220Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/f0e27532-6f09-4f6c-a853-9c439f09e0a7/.gitconfig'
+
+2026-04-13T05:04:45.9692070Z Temporarily overriding HOME='/Users/runner/work/_temp/f0e27532-6f09-4f6c-a853-9c439f09e0a7' before making global git config changes
+
+2026-04-13T05:04:45.9693780Z Adding repository directory to the temporary git global config as a safe directory
+
+2026-04-13T05:04:45.9702390Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/threema-poc-22196/threema-poc-22196
+
+2026-04-13T05:04:45.9838090Z Deleting the contents of '/Users/runner/work/threema-poc-22196/threema-poc-22196'
+
+2026-04-13T05:04:45.9840790Z ##[group]Initializing the repository
+
+2026-04-13T05:04:45.9845410Z [command]/opt/homebrew/bin/git init /Users/runner/work/threema-poc-22196/threema-poc-22196
+
+2026-04-13T05:04:46.0064030Z hint: Using 'master' as the name for the initial branch. This default branch name
+
+2026-04-13T05:04:46.0067930Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+
+2026-04-13T05:04:46.0069140Z hint: to use in all of your new repositories, which will suppress this warning,
+
+2026-04-13T05:04:46.0070150Z hint: call:
+
+2026-04-13T05:04:46.0070700Z hint:
+
+2026-04-13T05:04:46.0071350Z hint: git config --global init.defaultBranch <name>
+
+2026-04-13T05:04:46.0072080Z hint:
+
+2026-04-13T05:04:46.0072780Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+
+2026-04-13T05:04:46.0073870Z hint: 'development'. The just-created branch can be renamed via this command:
+
+2026-04-13T05:04:46.0074760Z hint:
+
+2026-04-13T05:04:46.0075330Z hint: git branch -m <name>
+
+2026-04-13T05:04:46.0075970Z hint:
+
+2026-04-13T05:04:46.0076720Z hint: Disable this message with "git config set advice.defaultBranchName false"
+
+2026-04-13T05:04:46.0078140Z Initialized empty Git repository in /Users/runner/work/threema-poc-22196/threema-poc-22196/.git/
+
+2026-04-13T05:04:46.0080770Z [command]/opt/homebrew/bin/git remote add origin https://github.com/SaadiMalik1/threema-poc-22196
+
+2026-04-13T05:04:46.0169780Z ##[endgroup]
+
+2026-04-13T05:04:46.0170840Z ##[group]Disabling automatic garbage collection
+
+2026-04-13T05:04:46.0172600Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+
+2026-04-13T05:04:46.0259800Z ##[endgroup]
+
+2026-04-13T05:04:46.0260850Z ##[group]Setting up auth
+
+2026-04-13T05:04:46.0268700Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+
+2026-04-13T05:04:46.0361220Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+
+2026-04-13T05:04:46.1244560Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+
+2026-04-13T05:04:46.1327560Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+
+2026-04-13T05:04:46.2314460Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+
+2026-04-13T05:04:46.2632520Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+
+2026-04-13T05:04:46.4011750Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+
+2026-04-13T05:04:46.4370480Z ##[endgroup]
+
+2026-04-13T05:04:46.4373540Z ##[group]Fetching the repository
+
+2026-04-13T05:04:46.4374600Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +8ef4582f1f59672e61118632316e71ea57e401f2:refs/remotes/origin/master
+
+2026-04-13T05:04:47.0573440Z From https://github.com/SaadiMalik1/threema-poc-22196
+
+2026-04-13T05:04:47.0576190Z * [new ref] 8ef4582f1f59672e61118632316e71ea57e401f2 -> origin/master
+
+2026-04-13T05:04:47.0666670Z ##[endgroup]
+
+2026-04-13T05:04:47.0667050Z ##[group]Determining the checkout info
+
+2026-04-13T05:04:47.0667420Z ##[endgroup]
+
+2026-04-13T05:04:47.0667710Z [command]/opt/homebrew/bin/git sparse-checkout disable
+
+2026-04-13T05:04:47.0729070Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+
+2026-04-13T05:04:47.0790090Z ##[group]Checking out the ref
+
+2026-04-13T05:04:47.0793050Z [command]/opt/homebrew/bin/git checkout --progress --force -B master refs/remotes/origin/master
+
+2026-04-13T05:04:47.0930460Z Reset branch 'master'
+
+2026-04-13T05:04:47.0931660Z branch 'master' set up to track 'origin/master'.
+
+2026-04-13T05:04:47.0933200Z ##[endgroup]
+
+2026-04-13T05:04:47.1004570Z [command]/opt/homebrew/bin/git log -1 --format=%H
+
+2026-04-13T05:04:47.1077870Z 8ef4582f1f59672e61118632316e71ea57e401f2
+
+2026-04-13T05:04:47.1228600Z ##[group]Run brew install --cask threema
+
+2026-04-13T05:04:47.1229180Z [36;1mbrew install --cask threema[0m
+
+2026-04-13T05:04:47.1264850Z shell: /bin/bash -e {0}
+
+2026-04-13T05:04:47.1265100Z ##[endgroup]
+
+2026-04-13T05:04:50.2102610Z ✔︎ JSON API formula_tap_migrations.jws.json
+
+2026-04-13T05:04:50.2105760Z ✔︎ JSON API cask_tap_migrations.jws.json
+
+2026-04-13T05:04:50.6404530Z [32m==>[0m [1mFetching downloads for: [32mthreema[39m[0m
+
+2026-04-13T05:05:03.5655130Z ✔︎ Cask threema (1.2.50)
+
+2026-04-13T05:05:04.9994910Z [32m==>[0m [1mInstalling Cask [32mthreema[39m[0m
+
+2026-04-13T05:05:10.5153430Z [34m==>[0m [1mMoving App 'Threema.app' to '/Applications/Threema.app'[0m
+
+2026-04-13T05:05:10.6541580Z 🍺 threema was successfully installed!
+
+2026-04-13T05:05:10.7343340Z ##[group]Run dtolnay/rust-toolchain@stable
+
+2026-04-13T05:05:10.7343770Z with:
+
+2026-04-13T05:05:10.7343990Z toolchain: stable
+
+2026-04-13T05:05:10.7344280Z ##[endgroup]
+
+2026-04-13T05:05:10.7467190Z ##[group]Run : parse toolchain version
+
+2026-04-13T05:05:10.7467570Z [36;1m: parse toolchain version[0m
+
+2026-04-13T05:05:10.7468060Z [36;1mif [[ -z $toolchain ]]; then[0m
+
+2026-04-13T05:05:10.7468580Z [36;1m # GitHub does not enforce `required: true` inputs itself. https://github.com/actions/runner/issues/1070[0m
+
+2026-04-13T05:05:10.7469020Z [36;1m echo "'toolchain' is a required input" >&2[0m
+
+2026-04-13T05:05:10.7469300Z [36;1m exit 1[0m
+
+2026-04-13T05:05:10.7469570Z [36;1melif [[ $toolchain =~ ^stable' '[0-9]+' '(year|month|week|day)s?' 'ago$ ]]; then[0m
+
+2026-04-13T05:05:10.7470010Z [36;1m if [[ macOS == macOS ]]; then[0m
+
+2026-04-13T05:05:10.7470560Z [36;1m echo "toolchain=1.$((($(date -v-$(sed 's/stable \([0-9]*\) \(.\).*/\1\2/' <<< $toolchain) +%s)/60/60/24-16569)/7/6))" >> $GITHUB_OUTPUT[0m
+
+2026-04-13T05:05:10.7470960Z [36;1m else[0m
+
+2026-04-13T05:05:10.7471330Z [36;1m echo "toolchain=1.$((($(date --date "${toolchain#stable }" +%s)/60/60/24-16569)/7/6))" >> $GITHUB_OUTPUT[0m
+
+2026-04-13T05:05:10.7471680Z [36;1m fi[0m
+
+2026-04-13T05:05:10.7471900Z [36;1melif [[ $toolchain =~ ^stable' 'minus' '[0-9]+' 'releases?$ ]]; then[0m
+
+2026-04-13T05:05:10.7472350Z [36;1m echo "toolchain=1.$((($(date +%s)/60/60/24-16569)/7/6-${toolchain//[^0-9]/}))" >> $GITHUB_OUTPUT[0m
+
+2026-04-13T05:05:10.7472710Z [36;1melif [[ $toolchain =~ ^1\.[0-9]+$ ]]; then[0m
+
+2026-04-13T05:05:10.7473210Z [36;1m echo "toolchain=1.$((i=${toolchain#1.}, c=($(date +%s)/60/60/24-16569)/7/6, i+9*i*(10*i<=c)+90*i*(100*i<=c)))" >> $GITHUB_OUTPUT[0m
+
+2026-04-13T05:05:10.7473650Z [36;1melse[0m
+
+2026-04-13T05:05:10.7473840Z [36;1m echo "toolchain=$toolchain" >> $GITHUB_OUTPUT[0m
+
+2026-04-13T05:05:10.7474070Z [36;1mfi[0m
+
+2026-04-13T05:05:10.7552510Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+
+2026-04-13T05:05:10.7552990Z env:
+
+2026-04-13T05:05:10.7553560Z toolchain: stable
+
+2026-04-13T05:05:10.7553890Z ##[endgroup]
+
+2026-04-13T05:05:10.8431330Z ##[group]Run : construct rustup command line
+
+2026-04-13T05:05:10.8431980Z [36;1m: construct rustup command line[0m
+
+2026-04-13T05:05:10.8432350Z [36;1mecho "targets=$(for t in ${targets//,/ }; do echo -n ' --target' $t; done)" >> $GITHUB_OUTPUT[0m
+
+2026-04-13T05:05:10.8433040Z [36;1mecho "components=$(for c in ${components//,/ }; do echo -n ' --component' $c; done)" >> $GITHUB_OUTPUT[0m
+
+2026-04-13T05:05:10.8433510Z [36;1mecho "downgrade=" >> $GITHUB_OUTPUT[0m
+
+2026-04-13T05:05:10.8471300Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+
+2026-04-13T05:05:10.8471750Z env:
+
+2026-04-13T05:05:10.8471900Z targets:
+
+2026-04-13T05:05:10.8472110Z components:
+
+2026-04-13T05:05:10.8472280Z ##[endgroup]
+
+2026-04-13T05:05:10.8881640Z ##[group]Run : set $CARGO_HOME
+
+2026-04-13T05:05:10.8881970Z [36;1m: set $CARGO_HOME[0m
+
+2026-04-13T05:05:10.8882280Z [36;1mecho CARGO_HOME=${CARGO_HOME:-"$HOME/.cargo"} >> $GITHUB_ENV[0m
+
+2026-04-13T05:05:10.8914330Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+
+2026-04-13T05:05:10.8914580Z ##[endgroup]
+
+2026-04-13T05:05:10.9209590Z ##[group]Run : install rustup if needed
+
+2026-04-13T05:05:10.9210040Z [36;1m: install rustup if needed[0m
+
+2026-04-13T05:05:10.9214670Z [36;1mif ! command -v rustup &>/dev/null; then[0m
+
+2026-04-13T05:05:10.9215270Z [36;1m curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused --location --silent --show-error --fail https://sh.rustup.rs | sh -s -- --default-toolchain none -y[0m
+
+2026-04-13T05:05:10.9215830Z [36;1m echo "$CARGO_HOME/bin" >> $GITHUB_PATH[0m
+
+2026-04-13T05:05:10.9216030Z [36;1mfi[0m
+
+2026-04-13T05:05:10.9245250Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+
+2026-04-13T05:05:10.9245510Z env:
+
+2026-04-13T05:05:10.9245660Z CARGO_HOME: /Users/runner/.cargo
+
+2026-04-13T05:05:10.9245840Z ##[endgroup]
+
+2026-04-13T05:05:10.9611810Z ##[group]Run rustup toolchain install stable --profile minimal --no-self-update
+
+2026-04-13T05:05:10.9612340Z [36;1mrustup toolchain install stable --profile minimal --no-self-update[0m
+
+2026-04-13T05:05:10.9643520Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+
+2026-04-13T05:05:10.9643990Z env:
+
+2026-04-13T05:05:10.9644170Z CARGO_HOME: /Users/runner/.cargo
+
+2026-04-13T05:05:10.9644440Z RUSTUP_PERMIT_COPY_RENAME: 1
+
+2026-04-13T05:05:10.9644600Z ##[endgroup]
+
+2026-04-13T05:05:12.0909350Z info: syncing channel updates for stable-aarch64-apple-darwin
+
+2026-04-13T05:05:12.2150790Z
+
+2026-04-13T05:05:12.2272130Z stable-aarch64-apple-darwin unchanged - rustc 1.94.1 (e408947bf 2026-03-25)
+
+2026-04-13T05:05:12.2294890Z info: self-update is disabled for this build of rustup
+
+2026-04-13T05:05:12.2295090Z
+
+2026-04-13T05:05:12.2298040Z info: any updates to rustup will need to be fetched with your system package manager
+
+2026-04-13T05:05:12.2363650Z ##[group]Run rustup default stable
+
+2026-04-13T05:05:12.2364000Z [36;1mrustup default stable[0m
+
+2026-04-13T05:05:12.2423690Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+
+2026-04-13T05:05:12.2423960Z env:
+
+2026-04-13T05:05:12.2424200Z CARGO_HOME: /Users/runner/.cargo
+
+2026-04-13T05:05:12.2424390Z ##[endgroup]
+
+2026-04-13T05:05:12.2981640Z info: using existing install for stable-aarch64-apple-darwin
+
+2026-04-13T05:05:12.3161210Z info: default toolchain set to stable-aarch64-apple-darwin
+
+2026-04-13T05:05:12.3161540Z
+
+2026-04-13T05:05:12.3318460Z stable-aarch64-apple-darwin unchanged - rustc 1.94.1 (e408947bf 2026-03-25)
+
+2026-04-13T05:05:12.3319550Z
+
+2026-04-13T05:05:12.3350910Z ##[group]Run : create cachekey
+
+2026-04-13T05:05:12.3351140Z [36;1m: create cachekey[0m
+
+2026-04-13T05:05:12.3351560Z [36;1mDATE=$(rustc +stable --version --verbose | sed -ne 's/^commit-date: \(20[0-9][0-9]\)-\([01][0-9]\)-\([0-3][0-9]\)$/\1\2\3/p')[0m
+
+2026-04-13T05:05:12.3352070Z [36;1mHASH=$(rustc +stable --version --verbose | sed -ne 's/^commit-hash: //p')[0m
+
+2026-04-13T05:05:12.3352560Z [36;1mecho "cachekey=$(echo $DATE$HASH | head -c12)" >> $GITHUB_OUTPUT[0m
+
+2026-04-13T05:05:12.3391530Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+
+2026-04-13T05:05:12.3391940Z env:
+
+2026-04-13T05:05:12.3392100Z CARGO_HOME: /Users/runner/.cargo
+
+2026-04-13T05:05:12.3392280Z ##[endgroup]
+
+2026-04-13T05:05:12.4732290Z ##[group]Run : disable incremental compilation
+
+2026-04-13T05:05:12.4733500Z [36;1m: disable incremental compilation[0m
+
+2026-04-13T05:05:12.4733820Z [36;1mif [ -z "${CARGO_INCREMENTAL+set}" ]; then[0m
+
+2026-04-13T05:05:12.4734090Z [36;1m echo CARGO_INCREMENTAL=0 >> $GITHUB_ENV[0m
+
+2026-04-13T05:05:12.4734290Z [36;1mfi[0m
+
+2026-04-13T05:05:12.4773410Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+
+2026-04-13T05:05:12.4773650Z env:
+
+2026-04-13T05:05:12.4773840Z CARGO_HOME: /Users/runner/.cargo
+
+2026-04-13T05:05:12.4774010Z ##[endgroup]
+
+2026-04-13T05:05:12.5140480Z ##[group]Run : enable colors in Cargo output
+
+2026-04-13T05:05:12.5140770Z [36;1m: enable colors in Cargo output[0m
+
+2026-04-13T05:05:12.5141030Z [36;1mif [ -z "${CARGO_TERM_COLOR+set}" ]; then[0m
+
+2026-04-13T05:05:12.5141350Z [36;1m echo CARGO_TERM_COLOR=always >> $GITHUB_ENV[0m
+
+2026-04-13T05:05:12.5141590Z [36;1mfi[0m
+
+2026-04-13T05:05:12.5183420Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+
+2026-04-13T05:05:12.5183720Z env:
+
+2026-04-13T05:05:12.5186630Z CARGO_HOME: /Users/runner/.cargo
+
+2026-04-13T05:05:12.5186810Z CARGO_INCREMENTAL: 0
+
+2026-04-13T05:05:12.5186960Z ##[endgroup]
+
+2026-04-13T05:05:12.5550100Z ##[group]Run : enable Cargo sparse registry
+
+2026-04-13T05:05:12.5550360Z [36;1m: enable Cargo sparse registry[0m
+
+2026-04-13T05:05:12.5550670Z [36;1m# implemented in 1.66, stabilized in 1.68, made default in 1.70[0m
+
+2026-04-13T05:05:12.5551220Z [36;1mif [ -z "${CARGO_REGISTRIES_CRATES_IO_PROTOCOL+set}" -o -f "/Users/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol ]; then[0m
+
+2026-04-13T05:05:12.5551770Z [36;1m if rustc +stable --version --verbose | grep -q '^release: 1\.6[89]\.'; then[0m
+
+2026-04-13T05:05:12.5552620Z [36;1m touch "/Users/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol || true[0m
+
+2026-04-13T05:05:12.5553060Z [36;1m echo CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse >> $GITHUB_ENV[0m
+
+2026-04-13T05:05:12.5553490Z [36;1m elif rustc +stable --version --verbose | grep -q '^release: 1\.6[67]\.'; then[0m
+
+2026-04-13T05:05:12.5554010Z [36;1m touch "/Users/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol || true[0m
+
+2026-04-13T05:05:12.5554410Z [36;1m echo CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git >> $GITHUB_ENV[0m
+
+2026-04-13T05:05:12.5554660Z [36;1m fi[0m
+
+2026-04-13T05:05:12.5554780Z [36;1mfi[0m
+
+2026-04-13T05:05:12.5592650Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+
+2026-04-13T05:05:12.5592910Z env:
+
+2026-04-13T05:05:12.5593240Z CARGO_HOME: /Users/runner/.cargo
+
+2026-04-13T05:05:12.5593440Z CARGO_INCREMENTAL: 0
+
+2026-04-13T05:05:12.5593590Z CARGO_TERM_COLOR: always
+
+2026-04-13T05:05:12.5593740Z ##[endgroup]
+
+2026-04-13T05:05:12.6436740Z ##[group]Run : work around spurious network errors in curl 8.0
+
+2026-04-13T05:05:12.6437090Z [36;1m: work around spurious network errors in curl 8.0[0m
+
+2026-04-13T05:05:12.6437510Z [36;1m# https://rust-lang.zulipchat.com/#narrow/stream/246057-t-cargo/topic/timeout.20investigation[0m
+
+2026-04-13T05:05:12.6437990Z [36;1mif rustc +stable --version --verbose | grep -q '^release: 1\.7[01]\.'; then[0m
+
+2026-04-13T05:05:12.6438390Z [36;1m echo CARGO_HTTP_MULTIPLEXING=false >> $GITHUB_ENV[0m
+
+2026-04-13T05:05:12.6438610Z [36;1mfi[0m
+
+2026-04-13T05:05:12.6467990Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+
+2026-04-13T05:05:12.6468230Z env:
+
+2026-04-13T05:05:12.6468370Z CARGO_HOME: /Users/runner/.cargo
+
+2026-04-13T05:05:12.6468550Z CARGO_INCREMENTAL: 0
+
+2026-04-13T05:05:12.6468700Z CARGO_TERM_COLOR: always
+
+2026-04-13T05:05:12.6468870Z ##[endgroup]
+
+2026-04-13T05:05:12.6995440Z ##[group]Run rustc +stable --version --verbose
+
+2026-04-13T05:05:12.6995790Z [36;1mrustc +stable --version --verbose[0m
+
+2026-04-13T05:05:12.7026720Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+
+2026-04-13T05:05:12.7026980Z env:
+
+2026-04-13T05:05:12.7027170Z CARGO_HOME: /Users/runner/.cargo
+
+2026-04-13T05:05:12.7027410Z CARGO_INCREMENTAL: 0
+
+2026-04-13T05:05:12.7027580Z CARGO_TERM_COLOR: always
+
+2026-04-13T05:05:12.7027740Z ##[endgroup]
+
+2026-04-13T05:05:12.7580960Z rustc 1.94.1 (e408947bf 2026-03-25)
+
+2026-04-13T05:05:12.7581750Z binary: rustc
+
+2026-04-13T05:05:12.7582890Z commit-hash: e408947bfd200af42db322daf0fadfe7e26d3bd1
+
+2026-04-13T05:05:12.7583210Z commit-date: 2026-03-25
+
+2026-04-13T05:05:12.7583390Z host: aarch64-apple-darwin
+
+2026-04-13T05:05:12.7583550Z release: 1.94.1
+
+2026-04-13T05:05:12.7586010Z LLVM version: 21.1.8
+
+2026-04-13T05:05:12.7648210Z ##[group]Run rustc --edition 2021 poc-toctou-full.rs -o poc-toctou-full
+
+2026-04-13T05:05:12.7648660Z [36;1mrustc --edition 2021 poc-toctou-full.rs -o poc-toctou-full[0m
+
+2026-04-13T05:05:12.7678130Z shell: /bin/bash -e {0}
+
+2026-04-13T05:05:12.7678290Z env:
+
+2026-04-13T05:05:12.7678430Z CARGO_HOME: /Users/runner/.cargo
+
+2026-04-13T05:05:12.7678610Z CARGO_INCREMENTAL: 0
+
+2026-04-13T05:05:12.7678780Z CARGO_TERM_COLOR: always
+
+2026-04-13T05:05:12.7678920Z ##[endgroup]
+
+2026-04-13T05:05:13.1143770Z warning: unused import: `AtomicBool`
+
+2026-04-13T05:05:13.1145780Z --> poc-toctou-full.rs:14:21
+
+2026-04-13T05:05:13.1147920Z |
+
+2026-04-13T05:05:13.1153800Z 14 | sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc},
+
+2026-04-13T05:05:13.1154120Z | ^^^^^^^^^^
+
+2026-04-13T05:05:13.1154300Z |
+
+2026-04-13T05:05:13.1154530Z = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+2026-04-13T05:05:13.1154740Z
+
+2026-04-13T05:05:13.6070420Z warning: variable does not need to be mutable
+
+2026-04-13T05:05:13.6071290Z --> poc-toctou-full.rs:273:9
+
+2026-04-13T05:05:13.6072100Z |
+
+2026-04-13T05:05:13.6114300Z 273 | let mut test = ToctouTest::new(config.clone())?;
+
+2026-04-13T05:05:13.6139990Z | ----^^^^
+
+2026-04-13T05:05:13.6154010Z | |
+
+2026-04-13T05:05:13.6160760Z | help: remove this `mut`
+
+2026-04-13T05:05:13.6161230Z |
+
+2026-04-13T05:05:13.6162930Z = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+2026-04-13T05:05:13.6163400Z
+
+2026-04-13T05:05:15.0507900Z warning: 2 warnings emitted
+
+2026-04-13T05:05:15.0508420Z
+
+2026-04-13T05:05:15.0578630Z ##[group]Run ./poc-toctou-full
+
+2026-04-13T05:05:15.0578930Z [36;1m./poc-toctou-full[0m
+
+2026-04-13T05:05:15.0616110Z shell: /bin/bash -e {0}
+
+2026-04-13T05:05:15.0616330Z env:
+
+2026-04-13T05:05:15.0616500Z CARGO_HOME: /Users/runner/.cargo
+
+2026-04-13T05:05:15.0616850Z CARGO_INCREMENTAL: 0
+
+2026-04-13T05:05:15.0617000Z CARGO_TERM_COLOR: always
+
+2026-04-13T05:05:15.0617170Z ##[endgroup]
+
+2026-04-13T05:05:15.1104550Z ╔════════════════════════════════════════════════════╗
+
+2026-04-13T05:05:15.1108490Z ║ Threema Desktop macOS Helper TOCTOU POC ║
+
+2026-04-13T05:05:15.1109280Z ║ Time-of-Check-Time-of-Use Race Condition ║
+
+2026-04-13T05:05:15.1109700Z ╚════════════════════════════════════════════════════╝
+
+2026-04-13T05:05:15.1109910Z
+
+2026-04-13T05:05:15.1110560Z [+] Test directory: /tmp/threema-toctou-4767
+
+2026-04-13T05:05:15.1110860Z [+] Setting up test environment...
+
+2026-04-13T05:05:15.1111170Z [+] Copying Threema.app to payload directory...
+
+2026-04-13T05:05:16.4843390Z [+] Creating malicious LaunchDaemon plist...
+
+2026-04-13T05:05:16.4845710Z [+] Malicious plist created: /tmp/threema-toctou-4767/malicious.plist
+
+2026-04-13T05:05:16.4851060Z [*] Test Iteration 1/1
+
+2026-04-13T05:05:16.4852060Z
+
+2026-04-13T05:05:16.4852580Z [*] Executing race condition test...
+
+2026-04-13T05:05:16.4853600Z [*] Configuration:
+
+2026-04-13T05:05:16.4854500Z - Attempts: 50
+
+2026-04-13T05:05:16.4855910Z - Swap interval: 1000μs
+
+2026-04-13T05:05:16.4856770Z - Malicious hold: 20ms
+
+2026-04-13T05:05:16.4857630Z - Validation simulation: 150ms
+
+2026-04-13T05:05:16.4858190Z - Aggressive mode: false
+
+2026-04-13T05:05:16.4859310Z
+
+2026-04-13T05:05:16.4859490Z [*] Simulating SecStaticCodeCheckValidityWithErrors() blocking...
+
+2026-04-13T05:05:16.6679090Z .[+] Validation simulation completed: 183.51ms
+
+2026-04-13T05:05:19.7675420Z ....
+
+2026-04-13T05:05:19.7678050Z [*] Checking race condition result...
+
+2026-04-13T05:05:19.7679370Z [*] Race condition did not trigger in this attempt
+
+2026-04-13T05:05:19.7680620Z
+
+2026-04-13T05:05:19.7682030Z ═══════════════════════════════════════════════════
+
+2026-04-13T05:05:19.7682720Z RESULTS (Iteration 1):
+
+2026-04-13T05:05:19.7683550Z ═══════════════════════════════════════════════════
+
+2026-04-13T05:05:19.7684250Z Total Attempts: 50
+
+2026-04-13T05:05:19.7684770Z Successful Races: 0
+
+2026-04-13T05:05:19.7685520Z Success Rate: 0.0%
+
+2026-04-13T05:05:19.7685770Z
+
+2026-04-13T05:05:19.7686230Z ═══════════════════════════════════════════════════
+
+2026-04-13T05:05:19.7687150Z OVERALL RESULTS:
+
+2026-04-13T05:05:19.7687810Z ═══════════════════════════════════════════════════
+
+2026-04-13T05:05:19.7688530Z Total Attempts: 50
+
+2026-04-13T05:05:19.7689030Z Successful Races: 0
+
+2026-04-13T05:05:19.7689570Z Overall Success Rate: 0.0%
+
+2026-04-13T05:05:19.7689970Z
+
+2026-04-13T05:05:19.7690140Z [+] Cleaning up test directory...
+
+2026-04-13T05:05:19.7912280Z ##[group]Run ./poc-toctou-full --aggressive
+
+2026-04-13T05:05:19.7913190Z [36;1m./poc-toctou-full --aggressive[0m
+
+2026-04-13T05:05:19.7983020Z shell: /bin/bash -e {0}
+
+2026-04-13T05:05:19.7983660Z env:
+
+2026-04-13T05:05:19.7984530Z CARGO_HOME: /Users/runner/.cargo
+
+2026-04-13T05:05:19.7985190Z CARGO_INCREMENTAL: 0
+
+2026-04-13T05:05:19.7987340Z CARGO_TERM_COLOR: always
+
+2026-04-13T05:05:19.7987590Z ##[endgroup]
+
+2026-04-13T05:05:19.8576180Z ╔════════════════════════════════════════════════════╗
+
+2026-04-13T05:05:19.8577110Z ║ Threema Desktop macOS Helper TOCTOU POC ║
+
+2026-04-13T05:05:19.8577810Z ║ Time-of-Check-Time-of-Use Race Condition ║
+
+2026-04-13T05:05:19.8578300Z ╚════════════════════════════════════════════════════╝
+
+2026-04-13T05:05:19.8578580Z
+
+2026-04-13T05:05:19.8578730Z [*] Running in AGGRESSIVE mode
+
+2026-04-13T05:05:19.8578900Z
+
+2026-04-13T05:05:19.8579050Z [+] Test directory: /tmp/threema-toctou-4807
+
+2026-04-13T05:05:19.8579530Z [+] Setting up test environment...
+
+2026-04-13T05:05:19.8579870Z [+] Copying Threema.app to payload directory...
+
+2026-04-13T05:05:20.4360510Z [+] Creating malicious LaunchDaemon plist...
+
+2026-04-13T05:05:20.4361220Z [+] Malicious plist created: /tmp/threema-toctou-4807/malicious.plist
+
+2026-04-13T05:05:20.4361640Z [*] Test Iteration 1/3
+
+2026-04-13T05:05:20.4361840Z
+
+2026-04-13T05:05:20.4361920Z [*] Executing race condition test...
+
+2026-04-13T05:05:20.4362320Z [*] Configuration:
+
+2026-04-13T05:05:20.4362570Z - Attempts: 100
+
+2026-04-13T05:05:20.4363110Z - Swap interval: 500μs
+
+2026-04-13T05:05:20.4363430Z - Malicious hold: 50ms
+
+2026-04-13T05:05:20.4363680Z - Validation simulation: 200ms
+
+2026-04-13T05:05:20.4363980Z - Aggressive mode: true
+
+2026-04-13T05:05:20.4364080Z
+
+2026-04-13T05:05:20.4364270Z [*] Simulating SecStaticCodeCheckValidityWithErrors() blocking...
+
+2026-04-13T05:05:20.6507530Z .[+] Validation simulation completed: 214.47ms
+
+2026-04-13T05:05:34.5291700Z .........
+
+2026-04-13T05:05:34.5391960Z [*] Checking race condition result...
+
+2026-04-13T05:05:34.5493290Z [*] Race condition did not trigger in this attempt
+
+2026-04-13T05:05:34.5518240Z
+
+2026-04-13T05:05:34.5519630Z ═══════════════════════════════════════════════════
+
+2026-04-13T05:05:34.5520240Z RESULTS (Iteration 1):
+
+2026-04-13T05:05:34.5520660Z ═══════════════════════════════════════════════════
+
+2026-04-13T05:05:34.5521030Z Total Attempts: 100
+
+2026-04-13T05:05:34.5521480Z Successful Races: 0
+
+2026-04-13T05:05:34.5521810Z Success Rate: 0.0%
+
+2026-04-13T05:05:34.5522880Z
+
+2026-04-13T05:05:34.5523730Z [*] Test Iteration 2/3
+
+2026-04-13T05:05:34.5524380Z
+
+2026-04-13T05:05:34.5524730Z [*] Executing race condition test...
+
+2026-04-13T05:05:34.5527200Z [*] Configuration:
+
+2026-04-13T05:05:34.5527630Z - Attempts: 100
+
+2026-04-13T05:05:34.5528710Z - Swap interval: 500μs
+
+2026-04-13T05:05:34.5529080Z - Malicious hold: 50ms
+
+2026-04-13T05:05:34.5529400Z - Validation simulation: 200ms
+
+2026-04-13T05:05:34.5529650Z - Aggressive mode: true
+
+2026-04-13T05:05:34.5529880Z
+
+2026-04-13T05:05:34.5530020Z [*] Simulating SecStaticCodeCheckValidityWithErrors() blocking...
+
+2026-04-13T05:05:34.7313230Z .[+] Validation simulation completed: 202.18ms
+
+2026-04-13T05:05:48.7642270Z .........
+
+2026-04-13T05:05:48.7642730Z [*] Checking race condition result...
+
+2026-04-13T05:05:48.7643290Z [*] Race condition did not trigger in this attempt
+
+2026-04-13T05:05:48.7643650Z
+
+2026-04-13T05:05:48.7644960Z ═══════════════════════════════════════════════════
+
+2026-04-13T05:05:48.7645340Z RESULTS (Iteration 2):
+
+2026-04-13T05:05:48.7645630Z ═══════════════════════════════════════════════════
+
+2026-04-13T05:05:48.7645900Z Total Attempts: 100
+
+2026-04-13T05:05:48.7646100Z Successful Races: 0
+
+2026-04-13T05:05:48.7646350Z Success Rate: 0.0%
+
+2026-04-13T05:05:48.7646440Z
+
+2026-04-13T05:05:48.7646550Z [*] Test Iteration 3/3
+
+2026-04-13T05:05:48.7646680Z
+
+2026-04-13T05:05:48.7646820Z [*] Executing race condition test...
+
+2026-04-13T05:05:48.7647050Z [*] Configuration:
+
+2026-04-13T05:05:48.7648380Z - Attempts: 100
+
+2026-04-13T05:05:48.7648720Z - Swap interval: 500μs
+
+2026-04-13T05:05:48.7649170Z - Malicious hold: 50ms
+
+2026-04-13T05:05:48.7649620Z - Validation simulation: 200ms
+
+2026-04-13T05:05:48.7649920Z - Aggressive mode: true
+
+2026-04-13T05:05:48.7650020Z
+
+2026-04-13T05:05:48.7650210Z [*] Simulating SecStaticCodeCheckValidityWithErrors() blocking...
+
+2026-04-13T05:05:48.9909540Z .[+] Validation simulation completed: 226.54ms
+
+2026-04-13T05:06:02.9911080Z .........
+
+2026-04-13T05:06:02.9911640Z [*] Checking race condition result...
+
+2026-04-13T05:06:02.9940540Z [*] Race condition did not trigger in this attempt
+
+2026-04-13T05:06:02.9940790Z
+
+2026-04-13T05:06:02.9942100Z ═══════════════════════════════════════════════════
+
+2026-04-13T05:06:02.9942420Z RESULTS (Iteration 3):
+
+2026-04-13T05:06:02.9942640Z ═══════════════════════════════════════════════════
+
+2026-04-13T05:06:02.9942830Z Total Attempts: 100
+
+2026-04-13T05:06:02.9943020Z Successful Races: 0
+
+2026-04-13T05:06:02.9943250Z Success Rate: 0.0%
+
+2026-04-13T05:06:02.9943350Z
+
+2026-04-13T05:06:02.9943500Z ═══════════════════════════════════════════════════
+
+2026-04-13T05:06:02.9944030Z OVERALL RESULTS:
+
+2026-04-13T05:06:02.9944420Z ═══════════════════════════════════════════════════
+
+2026-04-13T05:06:02.9944750Z Total Attempts: 300
+
+2026-04-13T05:06:02.9944920Z Successful Races: 0
+
+2026-04-13T05:06:02.9945210Z Overall Success Rate: 0.0%
+
+2026-04-13T05:06:02.9945420Z
+
+2026-04-13T05:06:02.9945540Z [+] Cleaning up test directory...
+
+2026-04-13T05:06:03.0184550Z Post job cleanup.
+
+2026-04-13T05:06:03.3267830Z [command]/opt/homebrew/bin/git version
+
+2026-04-13T05:06:03.3543370Z git version 2.53.0
+
+2026-04-13T05:06:03.3582840Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/38aec674-b285-45b1-9b0f-a49102223aa3/.gitconfig'
+
+2026-04-13T05:06:03.3592550Z Temporarily overriding HOME='/Users/runner/work/_temp/38aec674-b285-45b1-9b0f-a49102223aa3' before making global git config changes
+
+2026-04-13T05:06:03.3593300Z Adding repository directory to the temporary git global config as a safe directory
+
+2026-04-13T05:06:03.3600470Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/threema-poc-22196/threema-poc-22196
+
+2026-04-13T05:06:03.3725150Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+
+2026-04-13T05:06:03.3787980Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+
+2026-04-13T05:06:03.4776670Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+
+2026-04-13T05:06:03.4835140Z http.https://github.com/.extraheader
+
+2026-04-13T05:06:03.4849580Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+
+2026-04-13T05:06:03.4933870Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+
+2026-04-13T05:06:03.5760020Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+
+2026-04-13T05:06:03.5818590Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+
+2026-04-13T05:06:03.6653520Z Cleaning up orphan processes
+
+2026-04-13T05:06:04.4142160Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+
+Based on the logs you just shared, I need to issue a correction: The workflow has been updated and is now installing the official Threema application. In the previous version of the workflow you showed me, it was just creating a dummy directory (mkdir -p /Applications/Threema.app). However, this log clearly shows the workflow executing brew install --cask threema, which downloads and installs the actual, official Threema app for macOS before running the tests.
+
+Here is a breakdown of what happened during this specific execution:
+
+1. Compilation
+The Rust toolchain (version 1.94.1) successfully compiled the poc-toctou-full.rs script. It threw a couple of minor warnings about unused imports and variables, but successfully generated the executable binary.
+
+2. Normal Run (./poc-toctou-full)
+Parameters: 50 attempts, 1000μs swap interval.
+
+Result: The race condition failed to trigger. 0 successes out of 50 attempts (0.0%).
+
+3. Aggressive Run (./poc-toctou-full --aggressive)
+Parameters: 300 attempts (3 iterations of 100), a much tighter swap interval (500μs), and a longer malicious hold time (50ms).
+
+Result: Even with the more aggressive timing, the race condition failed to trigger. 0 successes out of 300 attempts (0.0%).
+
+Why didn't the POC work?
+Time-Of-Check to Time-Of-Use (TOCTOU) exploits are notorious for being highly non-deterministic because you are fighting against the CPU scheduler and the operating system's file system operations. A 0% success rate across 350 total attempts likely means one of three things:
+
+The vulnerability is patched: The official version of Threema downloaded by Homebrew (v1.2.50) might already have a fix for this specific race condition.
+
+Architecture Timing: The GitHub runner used here is an ARM64 (Apple Silicon) machine (macos-15-arm64). The file system IO speeds and CPU scheduling on Apple Silicon are drastically different than on Intel machines. The microsecond timings hardcoded into the POC (like the 500μs swap interval) might be tuned for a different architecture and are missing the "race window" entirely.
+
+Environment Overhead: Running inside a virtualized GitHub Actions runner can introduce latency spikes that make winning a microsecond-level race extremely difficult compared to running it natively on a bare-metal machine.
+
+Are you the author of this POC trying to tune the parameters, or are you just analyzing a reported vulnerability?
+
+2026-04-13T05:04:44.3072710Z Current runner version: '2.333.1'
+
+2026-04-13T05:04:44.3085750Z ##[group]Runner Image Provisioner
+
+2026-04-13T05:04:44.3086180Z Hosted Compute Agent
+
+2026-04-13T05:04:44.3086490Z Version: 20260213.493
+
+2026-04-13T05:04:44.3086850Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
+
+2026-04-13T05:04:44.3087250Z Build Date: 2026-02-13T00:28:41Z
+
+2026-04-13T05:04:44.3087630Z Worker ID: {24ff658b-b162-4e12-bcab-f9110d4d002c}
+
+2026-04-13T05:04:44.3088020Z Azure Region: westus
+
+2026-04-13T05:04:44.3088320Z ##[endgroup]
+
+2026-04-13T05:04:44.3089050Z ##[group]Operating System
+
+2026-04-13T05:04:44.3089360Z macOS
+
+2026-04-13T05:04:44.3089620Z 15.7.4
+
+2026-04-13T05:04:44.3089860Z 24G517
+
+2026-04-13T05:04:44.3090110Z ##[endgroup]
+
+2026-04-13T05:04:44.3090380Z ##[group]Runner Image
+
+2026-04-13T05:04:44.3090680Z Image: macos-15-arm64
+
+2026-04-13T05:04:44.3090970Z Version: 20260406.0256.1
+
+2026-04-13T05:04:44.3091660Z Included Software: https://github.com/actions/runner-images/blob/macos-15-arm64/20260406.0256/images/macos/macos-15-arm64-Readme.md
+
+2026-04-13T05:04:44.3092550Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-15-arm64%2F20260406.0256
+
+2026-04-13T05:04:44.3093090Z ##[endgroup]
+
+2026-04-13T05:04:44.3093700Z ##[group]GITHUB_TOKEN Permissions
+
+2026-04-13T05:04:44.3094510Z Contents: read
+
+2026-04-13T05:04:44.3094790Z Metadata: read
+
+2026-04-13T05:04:44.3095060Z Packages: read
+
+2026-04-13T05:04:44.3095340Z ##[endgroup]
+
+2026-04-13T05:04:44.3096570Z Secret source: Actions
+
+2026-04-13T05:04:44.3096920Z Prepare workflow directory
+
+2026-04-13T05:04:44.3293040Z Prepare all required actions
+
+2026-04-13T05:04:44.3320700Z Getting action download info
+
+2026-04-13T05:04:44.7355660Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+
+2026-04-13T05:04:45.2113590Z Complete job name: run-bash-poc
+
+2026-04-13T05:04:45.2607360Z ##[group]Run actions/checkout@v4
+
+2026-04-13T05:04:45.2607850Z with:
+
+2026-04-13T05:04:45.2608140Z repository: SaadiMalik1/threema-poc-22196
+
+2026-04-13T05:04:45.2608600Z token: ***
+
+2026-04-13T05:04:45.2608960Z ssh-strict: true
+
+2026-04-13T05:04:45.2609250Z ssh-user: git
+
+2026-04-13T05:04:45.2609520Z persist-credentials: true
+
+2026-04-13T05:04:45.2609970Z clean: true
+
+2026-04-13T05:04:45.2610290Z sparse-checkout-cone-mode: true
+
+2026-04-13T05:04:45.2610620Z fetch-depth: 1
+
+2026-04-13T05:04:45.2610970Z fetch-tags: false
+
+2026-04-13T05:04:45.2611250Z show-progress: true
+
+2026-04-13T05:04:45.2611520Z lfs: false
+
+2026-04-13T05:04:45.2611780Z submodules: false
+
+2026-04-13T05:04:45.2612060Z set-safe-directory: true
+
+2026-04-13T05:04:45.2612490Z ##[endgroup]
+
+2026-04-13T05:04:45.6428400Z Syncing repository: SaadiMalik1/threema-poc-22196
+
+2026-04-13T05:04:45.6429830Z ##[group]Getting Git version info
+
+2026-04-13T05:04:45.6430530Z Working directory is '/Users/runner/work/threema-poc-22196/threema-poc-22196'
+
+2026-04-13T05:04:45.6431400Z [command]/opt/homebrew/bin/git version
+
+2026-04-13T05:04:45.7562350Z git version 2.53.0
+
+2026-04-13T05:04:45.7587640Z ##[endgroup]
+
+2026-04-13T05:04:45.7596400Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/b0630b61-2e10-4d76-821f-633fc3f9d2ab/.gitconfig'
+
+2026-04-13T05:04:45.7608020Z Temporarily overriding HOME='/Users/runner/work/_temp/b0630b61-2e10-4d76-821f-633fc3f9d2ab' before making global git config changes
+
+2026-04-13T05:04:45.7608950Z Adding repository directory to the temporary git global config as a safe directory
+
+2026-04-13T05:04:45.7612470Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/threema-poc-22196/threema-poc-22196
+
+2026-04-13T05:04:45.7717550Z Deleting the contents of '/Users/runner/work/threema-poc-22196/threema-poc-22196'
+
+2026-04-13T05:04:45.7720530Z ##[group]Initializing the repository
+
+2026-04-13T05:04:45.7725430Z [command]/opt/homebrew/bin/git init /Users/runner/work/threema-poc-22196/threema-poc-22196
+
+2026-04-13T05:04:45.7972040Z hint: Using 'master' as the name for the initial branch. This default branch name
+
+2026-04-13T05:04:45.7972870Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+
+2026-04-13T05:04:45.7974240Z hint: to use in all of your new repositories, which will suppress this warning,
+
+2026-04-13T05:04:45.7986510Z hint: call:
+
+2026-04-13T05:04:45.7992330Z hint:
+
+2026-04-13T05:04:45.7994300Z hint: git config --global init.defaultBranch <name>
+
+2026-04-13T05:04:45.8049990Z hint:
+
+2026-04-13T05:04:45.8050830Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+
+2026-04-13T05:04:45.8051630Z hint: 'development'. The just-created branch can be renamed via this command:
+
+2026-04-13T05:04:45.8052350Z hint:
+
+2026-04-13T05:04:45.8052830Z hint: git branch -m <name>
+
+2026-04-13T05:04:45.8053250Z hint:
+
+2026-04-13T05:04:45.8053810Z hint: Disable this message with "git config set advice.defaultBranchName false"
+
+2026-04-13T05:04:45.8054940Z Initialized empty Git repository in /Users/runner/work/threema-poc-22196/threema-poc-22196/.git/
+
+2026-04-13T05:04:45.8056730Z [command]/opt/homebrew/bin/git remote add origin https://github.com/SaadiMalik1/threema-poc-22196
+
+2026-04-13T05:04:45.8081750Z ##[endgroup]
+
+2026-04-13T05:04:45.8082350Z ##[group]Disabling automatic garbage collection
+
+2026-04-13T05:04:45.8084270Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+
+2026-04-13T05:04:45.8155780Z ##[endgroup]
+
+2026-04-13T05:04:45.8156360Z ##[group]Setting up auth
+
+2026-04-13T05:04:45.8160920Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+
+2026-04-13T05:04:45.8235720Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+
+2026-04-13T05:04:45.9442330Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+
+2026-04-13T05:04:45.9562540Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+
+2026-04-13T05:04:46.0466400Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+
+2026-04-13T05:04:46.0549450Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+
+2026-04-13T05:04:46.1390480Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+
+2026-04-13T05:04:46.1516700Z ##[endgroup]
+
+2026-04-13T05:04:46.1562470Z ##[group]Fetching the repository
+
+2026-04-13T05:04:46.1574410Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +8ef4582f1f59672e61118632316e71ea57e401f2:refs/remotes/origin/master
+
+2026-04-13T05:04:46.5630830Z From https://github.com/SaadiMalik1/threema-poc-22196
+
+2026-04-13T05:04:46.5633810Z * [new ref] 8ef4582f1f59672e61118632316e71ea57e401f2 -> origin/master
+
+2026-04-13T05:04:46.5828890Z ##[endgroup]
+
+2026-04-13T05:04:46.5829910Z ##[group]Determining the checkout info
+
+2026-04-13T05:04:46.5830710Z ##[endgroup]
+
+2026-04-13T05:04:46.5831320Z [command]/opt/homebrew/bin/git sparse-checkout disable
+
+2026-04-13T05:04:46.5909540Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+
+2026-04-13T05:04:46.5982070Z ##[group]Checking out the ref
+
+2026-04-13T05:04:46.5983440Z [command]/opt/homebrew/bin/git checkout --progress --force -B master refs/remotes/origin/master
+
+2026-04-13T05:04:46.6115920Z Reset branch 'master'
+
+2026-04-13T05:04:46.6122600Z branch 'master' set up to track 'origin/master'.
+
+2026-04-13T05:04:46.6125430Z ##[endgroup]
+
+2026-04-13T05:04:46.6230060Z [command]/opt/homebrew/bin/git log -1 --format=%H
+
+2026-04-13T05:04:46.6303580Z 8ef4582f1f59672e61118632316e71ea57e401f2
+
+2026-04-13T05:04:46.6489040Z ##[group]Run brew install --cask threema
+
+2026-04-13T05:04:46.6489810Z [36;1mbrew install --cask threema[0m
+
+2026-04-13T05:04:46.6536370Z shell: /bin/bash -e {0}
+
+2026-04-13T05:04:46.6536870Z ##[endgroup]
+
+2026-04-13T05:04:49.0031170Z ✔︎ JSON API formula_tap_migrations.jws.json
+
+2026-04-13T05:04:49.0031980Z ✔︎ JSON API cask_tap_migrations.jws.json
+
+2026-04-13T05:04:49.3303990Z [32m==>[0m [1mFetching downloads for: [32mthreema[39m[0m
+
+2026-04-13T05:05:07.0519060Z ✔︎ Cask threema (1.2.50)
+
+2026-04-13T05:05:08.6045150Z [32m==>[0m [1mInstalling Cask [32mthreema[39m[0m
+
+2026-04-13T05:05:12.7370310Z [34m==>[0m [1mMoving App 'Threema.app' to '/Applications/Threema.app'[0m
+
+2026-04-13T05:05:12.8383750Z 🍺 threema was successfully installed!
+
+2026-04-13T05:05:12.8667360Z ##[group]Run chmod +x poc-race-simple.sh
+
+2026-04-13T05:05:12.8667680Z [36;1mchmod +x poc-race-simple.sh[0m
+
+2026-04-13T05:05:12.8786330Z shell: /bin/bash -e {0}
+
+2026-04-13T05:05:12.8786640Z ##[endgroup]
+
+2026-04-13T05:05:12.9540620Z ##[group]Run ./poc-race-simple.sh
+
+2026-04-13T05:05:12.9541020Z [36;1m./poc-race-simple.sh[0m
+
+2026-04-13T05:05:12.9598500Z shell: /bin/bash -e {0}
+
+2026-04-13T05:05:12.9598970Z ##[endgroup]
+
+2026-04-13T05:05:13.0181640Z [*] Threema Desktop macOS Helper TOCTOU Race Condition POC
+
+2026-04-13T05:05:13.0182970Z [*] ========================================================
+
+2026-04-13T05:05:13.0184450Z
+
+2026-04-13T05:05:13.0257750Z [+] Setup: Creating test environment in /tmp/threema-toctou-poc-34958
+
+2026-04-13T05:05:13.0258610Z [+] Step 1: Copying valid Threema.app (will pass signature check)
+
+2026-04-13T05:05:13.5785630Z [+] Step 2: Creating malicious LaunchDaemon plist
+
+2026-04-13T05:05:13.5932180Z [+] Payload size: 483M
+
+2026-04-13T05:05:13.5932510Z [+] Plist size: 490 bytes
+
+2026-04-13T05:05:13.5932920Z [+] Step 3: Creating destination placeholder
+
+2026-04-13T05:05:13.5984580Z [+] Step 4: Spawning race condition loop...
+
+2026-04-13T05:05:13.5985270Z [*] RACE LOOP RUNNING: Attempting to swap payload.app with malicious.plist
+
+2026-04-13T05:05:13.5990140Z [+] Step 5: Simulating SecStaticCodeCheckValidityWithErrors() blocking operation
+
+2026-04-13T05:05:13.5992040Z [*] VALIDATION: Validating signature of payload.app...
+
+2026-04-13T05:05:13.9942050Z [*] VALIDATION: Signature check completed (assumed valid)
+
+2026-04-13T05:05:13.9948350Z [+] Step 6: Attempting to copy validated payload...
+
+2026-04-13T05:05:14.0049270Z [*] RESULT: payload.app is a DIRECTORY (app bundle) - Race FAILED, signature check held
+
+2026-04-13T05:05:14.0052090Z
+
+2026-04-13T05:05:14.0057480Z [*] ========================================================
+
+2026-04-13T05:05:14.0058270Z [*] RACE CONDITION TEST RESULTS
+
+2026-04-13T05:05:14.0058720Z [*] ========================================================
+
+2026-04-13T05:05:14.0059050Z [+] Race Result: FAILED
+
+2026-04-13T05:05:14.0059560Z [+] Test Directory: /tmp/threema-toctou-poc-34958
+
+2026-04-13T05:05:14.0059940Z [*]
+
+2026-04-13T05:05:14.0060210Z [*] Race condition did not trigger in this run.
+
+2026-04-13T05:05:14.0060640Z [*] Try running again - timing is dependent on system load.
+
+2026-04-13T05:05:14.0061050Z [*]
+
+2026-04-13T05:05:14.0061470Z [+] Cleanup: Run 'rm -rf /tmp/threema-toctou-poc-34958' to clean up
+
+2026-04-13T05:05:14.0061800Z
+
+2026-04-13T05:05:14.0137980Z Post job cleanup.
+
+2026-04-13T05:05:14.1211640Z [command]/opt/homebrew/bin/git version
+
+2026-04-13T05:05:14.1289210Z git version 2.53.0
+
+2026-04-13T05:05:14.1312610Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/55a57f8c-07d8-4040-8419-432437fb17e1/.gitconfig'
+
+2026-04-13T05:05:14.1321970Z Temporarily overriding HOME='/Users/runner/work/_temp/55a57f8c-07d8-4040-8419-432437fb17e1' before making global git config changes
+
+2026-04-13T05:05:14.1323900Z Adding repository directory to the temporary git global config as a safe directory
+
+2026-04-13T05:05:14.1332470Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/threema-poc-22196/threema-poc-22196
+
+2026-04-13T05:05:14.1397910Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+
+2026-04-13T05:05:14.1454730Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+
+2026-04-13T05:05:14.2180880Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+
+2026-04-13T05:05:14.2228580Z http.https://github.com/.extraheader
+
+2026-04-13T05:05:14.2237600Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+
+2026-04-13T05:05:14.2294210Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+
+2026-04-13T05:05:14.3082430Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+
+2026-04-13T05:05:14.3135030Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+
+2026-04-13T05:05:14.4033150Z Cleaning up orphan processes
+
+2026-04-13T05:05:14.4889720Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+
+This log shows the execution of the other half of your workflow: the run-bash-poc job, which runs the poc-race-simple.sh script.
+
+Just like the updated Rust job we looked at earlier, this job also downloads and installs the official Threema application (brew install --cask threema installing version 1.2.50) before running the test.
+
+Here is what happened during the Bash execution:
+
+The Result: FAILED
+The Bash script also completely failed to trigger the TOCTOU race condition.
+
+How the Bash POC Tried to Work (and Why it Failed)
+The log gives us a very clear picture of the exploit's intended mechanics:
+
+The Setup: It creates a temporary directory and places the valid, officially signed Threema.app inside it.
+
+The Payload: It creates a malicious LaunchDaemon plist file (490 bytes). The goal of this exploit is likely to trick the system into installing or executing this plist file with elevated privileges.
+
+The Race: The script starts a loop attempting to rapidly swap the valid Threema.app directory with the malicious plist file.
+
+The Critical Window: It simulates a call to SecStaticCodeCheckValidityWithErrors(). This is a macOS API used to check the digital signature of an application. The vulnerability theorizes that there is a time gap between when macOS checks the signature (Time-of-Check) and when it actually moves or uses the file (Time-of-Use).
+
+The Failure: The log outputs: RESULT: payload.app is a DIRECTORY (app bundle) - Race FAILED, signature check held.
+
+This means that after the simulated signature check completed, the file system still contained the original Threema.app directory, not the malicious plist file. The swap was unsuccessful.
+
+Why Bash is a Tough Tool for TOCTOU
+While the Rust script failed (likely due to Apple Silicon architecture timings or the bug being patched), a Bash script is at an even bigger disadvantage.
+
+Bash is inherently slow for precision racing. Every file operation in Bash (like mv, cp, or ln) requires spawning a brand-new process. In the microsecond-level window of a TOCTOU vulnerability, the overhead of process creation in Bash makes it nearly impossible to win the race reliably against the macOS kernel, especially on extremely fast storage like the NVMe drives in Apple Silicon Macs.
+
+Since both the aggressive Rust version and the Bash version failed entirely on Threema v1.2.50, it strongly suggests this specific race condition vector is either patched in this version or structurally incompatible with the ARM64 runner environment.

@@ -41,6 +41,16 @@ jobs:
       - name: Compile Rust TOCTOU POC
         run: rustc --edition 2021 poc-toctou-full.rs -o poc-toctou-full
 
+      - name: Launch Threema with Remote Debugging
+        run: |
+          /Applications/Threema.app/Contents/MacOS/Threema --remote-debugging-port=9222 &
+          sleep 5
+
+      - name: Run CDP Exploit (Bypass IPC Signature Gate)
+        run: |
+          npm install ws
+          node poc-cdp-exploit.js
+
       - name: Run Rust TOCTOU (Aggressive — Real App)
         run: ./poc-toctou-full --aggressive
 

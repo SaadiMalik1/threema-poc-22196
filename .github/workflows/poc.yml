@@ -37,8 +37,14 @@ jobs:
           # simulates the production signature matching.
           sed -i '' 's/and anchor apple generic and certificate leaf\[subject.OU\] = DL5SR3PBJC//g' src/rust/helper/src/util/constants.rs
           
+          echo "=== Installing libthreema dependencies ==="
+          brew install binaryen
+          curl -L --proto "=https" --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+          cargo binstall wasm-bindgen-cli -y
+
           echo "=== Building Threema Desktop ==="
           npm ci
+          npm run libthreema:build
           npm run package binary consumer-live
           
           echo "=== Installing Threema.app ==="

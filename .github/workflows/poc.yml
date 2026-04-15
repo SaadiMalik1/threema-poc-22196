@@ -23,6 +23,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
+          targets: wasm32-unknown-unknown
 
       - name: Clone and Build Threema Desktop 2.0 Beta
         run: |
